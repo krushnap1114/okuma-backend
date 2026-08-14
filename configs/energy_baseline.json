@@ -1,0 +1,23 @@
+{
+  "power_unit": "kVA (apparent power -- no power factor available, NOT true kW)",
+  "power_source": "Stabilizer R/Y/B Voltage x Current -- the only sensor group with both voltage and current in this dataset",
+  "baseline_method": "mean/std of apparent power conditioned on operating_state only",
+  "limitation": "No RPM, spindle load, or cutting-state signal exists in the raw sensor set. Secondary candidate predictors (axis servo temps, spindle motor temp) were tested and only weakly correlate with power within ACTIVE state (r=0.17-0.19) -- too weak to build a defensible finer-grained baseline. This baseline will under-explain legitimate load variation within ACTIVE state; that residual spread (~13% CV) is a real, currently-unmodelable limitation, not noise to be corrected away.",
+  "baseline_by_state": {
+    "ACTIVE": {
+      "expected_power_kva": 14.354,
+      "std_kva": 1.88,
+      "n_train_samples": 8712
+    },
+    "OFF": {
+      "expected_power_kva": 0.0,
+      "std_kva": 0.0,
+      "n_train_samples": 1190
+    },
+    "STANDBY": {
+      "expected_power_kva": 0.908,
+      "std_kva": 0.531,
+      "n_train_samples": 2169
+    }
+  }
+}

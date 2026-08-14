@@ -1,0 +1,126 @@
+{
+  "extratrees_surrogate_val_r2": 0.645,
+  "interpretation": "Feature importance reflects statistical association with the anomaly score, not confirmed physical causality (per project requirement).",
+  "top_parameters": [
+    {
+      "feature": "Z2 Axis Servo Temp_min_1h",
+      "base_sensor": "Z2 Axis Servo Temp",
+      "subsystem": "Axis servo drives",
+      "importance": 0.029
+    },
+    {
+      "feature": "Mist_Lub_oil_pressure-2_range_1h",
+      "base_sensor": "Mist_Lub_oil_pressure-2",
+      "subsystem": "Mist lubrication",
+      "importance": 0.0278
+    },
+    {
+      "feature": "Spindle Motor Temp_mean_1h",
+      "base_sensor": "Spindle Motor Temp",
+      "subsystem": "Spindle",
+      "importance": 0.0269
+    },
+    {
+      "feature": "Z1 Axis Servo Temp_mean_1h",
+      "base_sensor": "Z1 Axis Servo Temp",
+      "subsystem": "Axis servo drives",
+      "importance": 0.0222
+    },
+    {
+      "feature": "Z2 Axis Servo Temp_mean_1h",
+      "base_sensor": "Z2 Axis Servo Temp",
+      "subsystem": "Axis servo drives",
+      "importance": 0.0221
+    },
+    {
+      "feature": "Spindle Motor Temp_min_1h",
+      "base_sensor": "Spindle Motor Temp",
+      "subsystem": "Spindle",
+      "importance": 0.0211
+    },
+    {
+      "feature": "Mist_Lub_oil_pressure-1_range_1h",
+      "base_sensor": "Mist_Lub_oil_pressure-1",
+      "subsystem": "Mist lubrication",
+      "importance": 0.0203
+    },
+    {
+      "feature": "Spindle Motor Temp",
+      "base_sensor": "Spindle Motor Temp",
+      "subsystem": "Spindle",
+      "importance": 0.0198
+    },
+    {
+      "feature": "Spindle Motor Temp_max_1h",
+      "base_sensor": "Spindle Motor Temp",
+      "subsystem": "Spindle",
+      "importance": 0.0194
+    },
+    {
+      "feature": "Z1 Axis Servo Temp_max_1h",
+      "base_sensor": "Z1 Axis Servo Temp",
+      "subsystem": "Axis servo drives",
+      "importance": 0.0159
+    },
+    {
+      "feature": "Spindle Motor Temp_mean_4h",
+      "base_sensor": "Spindle Motor Temp",
+      "subsystem": "Spindle",
+      "importance": 0.0151
+    },
+    {
+      "feature": "Spindle Cooling Unit B Current_min_1h",
+      "base_sensor": "Spindle Cooling Unit B Current",
+      "subsystem": "Spindle cooling",
+      "importance": 0.0151
+    },
+    {
+      "feature": "Magazine Temp_mean_4h",
+      "base_sensor": "Magazine Temp",
+      "subsystem": "Tool magazine",
+      "importance": 0.0148
+    },
+    {
+      "feature": "Z2 Axis Servo Temp_max_1h",
+      "base_sensor": "Z2 Axis Servo Temp",
+      "subsystem": "Axis servo drives",
+      "importance": 0.0147
+    },
+    {
+      "feature": "Magazine Temp",
+      "base_sensor": "Magazine Temp",
+      "subsystem": "Tool magazine",
+      "importance": 0.0128
+    },
+    {
+      "feature": "Spindle Cooling Unit R Current_min_1h",
+      "base_sensor": "Spindle Cooling Unit R Current",
+      "subsystem": "Spindle cooling",
+      "importance": 0.0127
+    },
+    {
+      "feature": "Stabilizer B Current_std_1h",
+      "base_sensor": "Stabilizer B Current",
+      "subsystem": "Power / stabilizer",
+      "importance": 0.0125
+    },
+    {
+      "feature": "Magazine Temp_mean_1h",
+      "base_sensor": "Magazine Temp",
+      "subsystem": "Tool magazine",
+      "importance": 0.0122
+    },
+    {
+      "feature": "Stabilizer Y Current_std_1h",
+      "base_sensor": "Stabilizer Y Current",
+      "subsystem": "Power / stabilizer",
+      "importance": 0.0121
+    },
+    {
+      "feature": "Magazine Temp_max_1h",
+      "base_sensor": "Magazine Temp",
+      "subsystem": "Tool magazine",
+      "importance": 0.0117
+    }
+  ]
+}

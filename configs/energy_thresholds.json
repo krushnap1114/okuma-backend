@@ -1,0 +1,26 @@
+{
+  "source": "statistically derived from TRAIN apparent-power deviation distribution, ACTIVE state only -- NOT OEM/engineering-validated thresholds, none were available",
+  "thresholds_percent": {
+    "p75": 4.393280444475415,
+    "p90": 12.238632158283417,
+    "p97": 30.512854075519034
+  },
+  "states": {
+    "NORMAL_ENERGY": {
+      "condition": "energy_excess_percent < 4.4",
+      "basis": "below train P75 (4.4%)"
+    },
+    "ENERGY_WATCH": {
+      "condition": "4.4 <= energy_excess_percent < 12.2",
+      "basis": "train P75-P90"
+    },
+    "ENERGY_ALERT": {
+      "condition": "12.2 <= energy_excess_percent < 30.5",
+      "basis": "train P90-P97"
+    },
+    "ENERGY_SAVING_OPPORTUNITY": {
+      "condition": "energy_excess_percent >= 30.5",
+      "basis": "top 3% (train P97=30.5%)"
+    }
+  }
+}

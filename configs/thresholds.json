@@ -1,0 +1,22 @@
+{
+  "source": "statistically derived from TRAIN Health Index distribution (2026-04-01 to 2026-05-13, ACTIVE state only) \u2014 NOT sourced from OKUMA/OEM documentation, which was not available",
+  "states": {
+    "NORMAL": {
+      "condition": "Health Index >= 66.4",
+      "basis": "train P25 (66.4)"
+    },
+    "WATCH": {
+      "condition": "57.1 <= Health Index < 66.4",
+      "basis": "train P10-P25"
+    },
+    "ALERT": {
+      "condition": "42.0 <= Health Index < 57.1",
+      "basis": "train P2-P10"
+    },
+    "CRITICAL": {
+      "condition": "Health Index < 42.0",
+      "basis": "train P2 (42.0) \u2014 matches the 2% contamination rate used to fit the Isolation Forest"
+    }
+  },
+  "note": "These 4 tiers reflect statistical rarity within 2 months of largely-normal operation, not validated failure severity. No EMERGENCY tier is defined \u2014 there is no failure history in this dataset to justify a 5th tier distinct from CRITICAL. Revisit once real maintenance/failure events are available to calibrate against."
+}

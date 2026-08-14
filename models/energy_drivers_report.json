@@ -1,0 +1,56 @@
+{
+  "method": "absolute Pearson correlation with apparent_power_kva, computed within ACTIVE state on TRAIN-equivalent full data",
+  "interpretation": "All correlations are WEAK (r=0.13-0.19). These are the best available candidate energy-associated parameters given the sensor set, not strong predictors. Reported as statistical association only, never as confirmed physical causation.",
+  "top_candidates": [
+    {
+      "feature": "Z2 Axis Servo Temp",
+      "abs_correlation": 0.1922,
+      "subsystem": "Axis servo drives"
+    },
+    {
+      "feature": "Spindle Motor Temp",
+      "abs_correlation": 0.188,
+      "subsystem": "Spindle"
+    },
+    {
+      "feature": "Spindle Motor Temp_max_1h",
+      "abs_correlation": 0.1851,
+      "subsystem": "Spindle"
+    },
+    {
+      "feature": "Z1 Axis Servo Temp",
+      "abs_correlation": 0.1843,
+      "subsystem": "Axis servo drives"
+    },
+    {
+      "feature": "Spindle Motor Temp_mean_1h",
+      "abs_correlation": 0.1838,
+      "subsystem": "Spindle"
+    },
+    {
+      "feature": "Spindle Motor Temp_min_1h",
+      "abs_correlation": 0.1815,
+      "subsystem": "Spindle"
+    },
+    {
+      "feature": "Y Axis Servo Temp",
+      "abs_correlation": 0.1807,
+      "subsystem": "Axis servo drives"
+    },
+    {
+      "feature": "Magazine Temp",
+      "abs_correlation": 0.1784,
+      "subsystem": "Tool magazine"
+    },
+    {
+      "feature": "Hyd Motor Flange Temp_max_1h",
+      "abs_correlation": 0.1767,
+      "subsystem": "Hydraulic system"
+    },
+    {
+      "feature": "Hyd Motor Fan Temp_mean_1h",
+      "abs_correlation": 0.1755,
+      "subsystem": "Hydraulic system"
+    }
+  ]
+}
