@@ -25,6 +25,7 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
@@ -32,6 +33,9 @@ from typing import Optional, List
 from datetime import datetime, timezone
 
 from prediction_engine import PredictionEngine
+import sys
+sys.path.insert(0, str(Path(__file__).parent / "lstm_model"))
+from lstm_prediction_engine import LSTMEngine
 
 app = FastAPI(title="OKUMA CNC Predictive Maintenance + Energy API", version="0.3.0")
 
@@ -74,6 +78,7 @@ def require_api_key(x_api_key: Optional[str] = Header(default=None)):
 
 
 engine = PredictionEngine()
+lstm_engine = LSTMEngine()
 
 
 class HistoryPredictRequest(BaseModel):
@@ -232,6 +237,91 @@ def history_trend(start: str, end: str):
 
     points = [{"timestamp": str(r.timestamp), "health_index": float(r.health_index)} for r in merged.itertuples()]
     return {"label": "OBSERVED HISTORICAL DATA", "points": points}
+
+
+@app.get("/history/events", dependencies=[Depends(require_api_key)])
+def history_events(start: str = None, end: str = None, limit: int = 200):
+    """
+    Historical risk events: contiguous stretches of time where the machine's
+    Health Index was in WATCH/ALERT/CRITICAL (not NORMAL), grouped into
+    discrete events rather than returned as raw 5-minute points -- a 3-hour
+    WATCH period is one event with a start/end, not 36 separate rows.
+
+    Uses the exact same _risk_state() thresholds (see configs/thresholds.json)
+    as every other endpoint, and the exact same score_batch() used by
+    /history/trend, so this is guaranteed consistent with what those already
+    show -- not a separate/approximate computation.
+
+    Deliberately lightweight: no per-event predict_historical() call here
+    (528 events x ~75ms each was ~40s -- too slow for a list view). Each
+    event includes peak_timestamp; fetch full detail (dominant_subsystem,
+    recommendation, etc.) for a specific event on demand via the existing
+    POST /history/predict with that timestamp, exactly like Historical
+    Lookup already does -- not a second, duplicate computation path.
+    """
+    window = engine.features
+    if start:
+        try:
+            window = window[window["timestamp"] >= datetime.fromisoformat(start)]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="start must be ISO format")
+    if end:
+        try:
+            window = window[window["timestamp"] <= datetime.fromisoformat(end)]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="end must be ISO format")
+
+    active = window[window["operating_state"] == "ACTIVE"].sort_values("timestamp")
+    scored = engine.score_batch(active)
+    merged = active.loc[scored.index, ["timestamp"]].copy()
+    merged["health_index"] = scored["health_index"]
+    merged["risk_level"] = merged["health_index"].apply(engine._risk_state)
+    merged = merged.sort_values("timestamp").reset_index(drop=True)
+
+    SEVERITY = {"NORMAL": 0, "WATCH": 1, "ALERT": 2, "CRITICAL": 3}
+    NOMINAL_GAP = pd.Timedelta(minutes=5)
+
+    events = []
+    current = None
+    for row in merged.itertuples():
+        if row.risk_level == "NORMAL":
+            if current:
+                events.append(current)
+                current = None
+            continue
+        # A gap larger than one nominal sampling interval (e.g. the machine
+        # went idle/OFF and came back) ends the event rather than merging
+        # two unrelated elevated-risk periods into one.
+        if current and (row.timestamp - current["end"]) > NOMINAL_GAP * 2:
+            events.append(current)
+            current = None
+        if current is None:
+            current = {"start": row.timestamp, "end": row.timestamp, "worst_risk": row.risk_level,
+                       "min_hi": row.health_index, "peak_ts": row.timestamp}
+        else:
+            current["end"] = row.timestamp
+            if SEVERITY[row.risk_level] > SEVERITY[current["worst_risk"]]:
+                current["worst_risk"] = row.risk_level
+            if row.health_index < current["min_hi"]:
+                current["min_hi"] = row.health_index
+                current["peak_ts"] = row.timestamp
+    if current:
+        events.append(current)
+
+    events.sort(key=lambda e: e["start"], reverse=True)
+    total_found = len(events)
+    events = events[:limit]
+
+    results = [{
+        "start": str(e["start"]),
+        "end": str(e["end"]),
+        "duration_minutes": int((e["end"] - e["start"]).total_seconds() / 60) + 5,
+        "worst_risk_level": e["worst_risk"],
+        "min_health_index": round(float(e["min_hi"]), 1),
+        "peak_timestamp": str(e["peak_ts"]),
+    } for e in events]
+
+    return {"count": len(results), "total_found": total_found, "events": results}
 
 
 @app.post("/compare", dependencies=[Depends(require_api_key)])
@@ -553,4 +643,54 @@ def maintenance_events_summary():
             "that model actually exists and is validated."
         ),
     }
+
+
+# ---------------------------------------------------------------------------
+# LSTM Autoencoder model (v1) — a second, fully independent anomaly-detection
+# model, requested explicitly to be built from scratch from the raw CBM
+# export files with no code/logic reused from PredictionEngine above. See
+# lstm_model/lstm_prediction_engine.py for the real reasoning and the real,
+# tested tradeoffs (67.6% coverage of ACTIVE time vs the original model's
+# near-full coverage, because this one requires a full uninterrupted 1-hour
+# window rather than a single snapshot). Runs alongside the original model,
+# not in place of it -- both are real, independently computed, and neither
+# fabricates a predicted maintenance date (that still requires failure/
+# maintenance event labels, which don't exist in the raw source data either,
+# independent of model architecture).
+# ---------------------------------------------------------------------------
+@app.get("/lstm/status", dependencies=[Depends(require_api_key)])
+def lstm_status():
+    total_active = int((lstm_engine.df["operating_state"] == "ACTIVE").sum())
+    scoreable = len(lstm_engine.trend())
+    return {
+        "model": "lstm_autoencoder_v1",
+        "architecture": "2-layer LSTM encoder -> 16-dim latent -> 2-layer LSTM decoder",
+        "window_hours": 1,
+        "trained_from": "33 raw CBM export files, parsed independently -- see lstm_model/ for the full pipeline",
+        "total_active_points": total_active,
+        "scoreable_points": scoreable,
+        "coverage_percent": round(scoreable / total_active * 100, 1) if total_active else None,
+        "coverage_note": (
+            "This model scores a full, uninterrupted 1-hour window, so points within an hour of a "
+            "shutdown/gap can't be scored (INSUFFICIENT DATA) -- unlike the original single-snapshot "
+            "model, which has near-full ACTIVE-time coverage. This is a real architectural tradeoff, "
+            "not a bug."
+        ),
+        "rul_note": (
+            "Does not and cannot produce predicted_maintenance_datetime/RUL -- that requires failure/"
+            "maintenance event labels, which do not exist in the raw source data, independent of which "
+            "anomaly-detection model is used. See /maintenance/events for the real path to that."
+        ),
+    }
+
+
+@app.post("/lstm/predict", dependencies=[Depends(require_api_key)])
+def lstm_predict(req: HistoryPredictRequest):
+    return lstm_engine.score_at(req.timestamp)
+
+
+@app.get("/lstm/trend", dependencies=[Depends(require_api_key)])
+def lstm_trend(start: str = None, end: str = None):
+    points = lstm_engine.trend(start=start, end=end)
+    return {"label": "LSTM AUTOENCODER — OBSERVED HISTORICAL DATA", "points": points}
 
