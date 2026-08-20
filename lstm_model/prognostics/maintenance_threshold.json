@@ -1,0 +1,6 @@
+{
+  "health_threshold": 75.0,
+  "consecutive_anomaly_threshold": 6,
+  "description": "health_threshold=75 reuses the WATCH threshold already calibrated and live in calibration.json for this same LSTM model -- not a new invented number. consecutive_anomaly_threshold=6 (30 minutes) requires a sustained condition, not a single noisy sample, before treating it as meaningful.",
+  "validation_status": "Threshold itself is reused/consistent with existing system. The FORECASTING MODEL used to project toward it (GRU) is validated by real backtested MAE/RMSE up to a 2-hour horizon only (see model_comparison.json) -- this is the longest horizon this machine's actual session lengths support with real training data. Any crossing projected beyond 2 hours out is an extrapolation beyond the validated range and is reported as such, not as a precise date."
+}

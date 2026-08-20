@@ -1,0 +1,46 @@
+{
+  "persistence": {
+    "mae_t+5min": 1.047,
+    "mae_t+30min": 3.931,
+    "mae_t+60min": 6.273,
+    "mae_t+120min": 5.389,
+    "rmse_t+5min": 3.298,
+    "rmse_t+30min": 9.493,
+    "rmse_t+60min": 13.851,
+    "rmse_t+120min": 11.678
+  },
+  "trend_regression": {
+    "mae_t+5min": 2.091,
+    "mae_t+30min": 5.527,
+    "mae_t+60min": 8.803,
+    "mae_t+120min": 10.233,
+    "rmse_t+5min": 5.124,
+    "rmse_t+30min": 13.97,
+    "rmse_t+60min": 20.438,
+    "rmse_t+120min": 22.985
+  },
+  "exp_smoothing_holt": {
+    "mae_t+5min": 2.523,
+    "mae_t+30min": 6.018,
+    "mae_t+60min": 9.435,
+    "mae_t+120min": 10.925,
+    "rmse_t+5min": 6.332,
+    "rmse_t+30min": 14.468,
+    "rmse_t+60min": 20.857,
+    "rmse_t+120min": 24.132
+  },
+  "gru_forecaster": {
+    "mae_t+5min": 4.942,
+    "mae_t+30min": 4.967,
+    "mae_t+60min": 4.961,
+    "mae_t+120min": 3.508,
+    "rmse_t+5min": 10.09,
+    "rmse_t+30min": 10.123,
+    "rmse_t+60min": 10.078,
+    "rmse_t+120min": 5.047
+  },
+  "_selected_model": "gru_forecaster",
+  "_selection_reason": "GRU has lowest MAE/RMSE at t+60min and t+120min, the two longest validated horizons -- most relevant for maintenance planning use. Persistence wins at t+5min/t+30min but a 'no change' forecast has no planning value. Trend regression and exponential smoothing lose to naive persistence at every horizon, confirming no simple linear/smoothed trend exists to exploit -- consistent with the earlier finding of no long-term degradation trend (r^2=0.037 globally).",
+  "_validated_horizon_limit_hours": 2.0,
+  "_validated_horizon_limit_reason": "Longest contiguous scoreable operating session in the entire dataset is 163 points (~13.6 hours); mean session length is only ~2.4 hours. No session in the data reaches 24 hours, so a 24-hour-ahead forecast target literally cannot be trained or validated on this machine's real operating pattern, independent of model choice."
+}

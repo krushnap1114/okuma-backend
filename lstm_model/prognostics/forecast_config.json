@@ -1,0 +1,1 @@
+{"feature_cols": ["health_index", "hi_smooth", "reconstruction_error", "err_smooth", "health_degradation_rate", "anomaly_frequency", "consecutive_anomaly_count", "power_trend", "spindle_temp_trend"], "input_window": 12, "horizons": [1, 6, 12, 24]}
