@@ -62,6 +62,21 @@ class LSTMEngine:
         hi = 100 * (1 - (err - p50) / (ceiling - p50))
         return float(np.clip(hi, 0, 100))
 
+    def _raw_sensors(self, loc):
+        """Real raw sensor snapshot at this point -- purely additive read of
+        already-loaded data, no change to scoring. Power uses the exact same
+        V*I/1000 formula prediction_engine.py already uses for actual_power_kva,
+        for consistency across both dashboards."""
+        row = self.df.iloc[loc]
+        v_cols = ["Stabilizer R Voltage", "Stabilizer Y Voltage", "Stabilizer B Voltage"]
+        i_cols = ["Stabilizer R Current", "Stabilizer Y Current", "Stabilizer B Current"]
+        power_kva = None
+        if not any(pd.isna(row.get(c)) for c in v_cols + i_cols):
+            power_kva = round(float(sum(row[v] * row[i] for v, i in zip(v_cols, i_cols)) / 1000), 3)
+        spindle_temp = row.get("Spindle Motor Temp")
+        spindle_temp = round(float(spindle_temp), 2) if pd.notna(spindle_temp) else None
+        return {"power_kva": power_kva, "spindle_motor_temp_c": spindle_temp}
+
     def score_at(self, timestamp):
         """Score the 1-hour window ending at `timestamp`. Returns a dict
         matching the shape the dashboard already expects (health_index,
@@ -87,6 +102,7 @@ class LSTMEngine:
                 "reconstruction_error": None,
                 "recommendation": f"Machine not operating at this timestamp ({state}) -- no health assessment applicable.",
                 "model": "lstm_autoencoder_v1",
+                "raw_sensors": self._raw_sensors(loc),
             }
 
         if loc < WINDOW - 1:
@@ -96,6 +112,7 @@ class LSTMEngine:
                 "reconstruction_error": None,
                 "recommendation": "INSUFFICIENT DATA -- fewer than 12 trailing readings (1 hour) available at this timestamp.",
                 "model": "lstm_autoencoder_v1",
+                "raw_sensors": self._raw_sensors(loc),
             }
 
         window_states = self.df["operating_state"].iloc[loc - WINDOW + 1: loc + 1]
@@ -108,6 +125,7 @@ class LSTMEngine:
                 "reconstruction_error": None,
                 "recommendation": "INSUFFICIENT DATA -- the trailing 1-hour window includes a non-ACTIVE or non-contiguous period.",
                 "model": "lstm_autoencoder_v1",
+                "raw_sensors": self._raw_sensors(loc),
             }
 
         raw_window = self.df[self.feature_cols].iloc[loc - WINDOW + 1: loc + 1].to_numpy()
@@ -135,6 +153,7 @@ class LSTMEngine:
             "recommendation": recs[risk],
             "model": "lstm_autoencoder_v1",
             "window_hours": 1,
+            "raw_sensors": self._raw_sensors(loc),
         }
 
     def trend(self, start=None, end=None):
@@ -172,7 +191,20 @@ class LSTMEngine:
         errs = ((recon_batch - batch) ** 2).mean(axis=(1, 2))
         his = [self._error_to_hi(e) for e in errs]
 
+        # Raw sensors for the same points, vectorized (not looped _raw_sensors,
+        # for speed across potentially thousands of points)
+        v_cols = ["Stabilizer R Voltage", "Stabilizer Y Voltage", "Stabilizer B Voltage"]
+        i_cols = ["Stabilizer R Current", "Stabilizer Y Current", "Stabilizer B Current"]
+        power_series = sum(df[v].to_numpy() * df[i].to_numpy() for v, i in zip(v_cols, i_cols)) / 1000
+        spindle_series = df["Spindle Motor Temp"].to_numpy()
+
         return [
-            {"timestamp": str(timestamps[i]), "health_index": round(h, 1)}
-            for i, h in zip(valid_end_idx, his)
+            {
+                "timestamp": str(timestamps[i]),
+                "health_index": round(h, 1),
+                "reconstruction_error": round(float(e), 4),
+                "power_kva": round(float(power_series[i]), 3) if not np.isnan(power_series[i]) else None,
+                "spindle_motor_temp_c": round(float(spindle_series[i]), 2) if not np.isnan(spindle_series[i]) else None,
+            }
+            for i, h, e in zip(valid_end_idx, his, errs)
         ]
